@@ -1,0 +1,164 @@
+select *, "2022-08-31"as recon_date from 
+(select Transaction_Id,Refund_Amount,Refund_Date,Client_Id,Client_Wallet_Id,Trans_Date,Trans_Ref_Num,Comments,Aggregator,
+case 
+when substr(Transaction_Id,0,4)='NJRI' and REF_AGG_AMOUNT is not null then "Refund received from NJRI aggregator"
+when substr(Transaction_Id,0,2)='TW' and REF_AGG_AMOUNT is not null then "Refund received from TW aggregator"
+--when  substr(trans_id,0,3)='JIO' and 
+else AGG_TRANS_STATUS  end as AGG_STATUS,CC_status
+from
+(
+select trans_id as Transaction_Id ,sum(refund_amt) as Refund_Amount,date(refund_date) as Refund_Date,a.client_id as Client_Id, c.client_wallet_id as Client_Wallet_Id,date(trans_date) as Trans_Date,trans_ref_no as Trans_Ref_Num , comments as Comments,
+case 
+                when  substr(trans_id,0,2)='TW' then 'THINKWALNUT'
+                 when  substr(trans_id,0,4)='NJRI' then 'NJRI'
+                 when  substr(trans_id,0,3)='JIO' then 'JIO'
+                 end as Aggregator  from prod_dwh.client_refund a, prod_dwh.distributor_retailer b , prod_dwh.client_wallet c where
+a.client_id= b.retailer_id and b.distributor_id= c.client_id and refund_type="Recharge" and 
+(date (refund_date) >= date_trunc(date_sub(("2022-08-31"), interval 1 day), month) and date(refund_date) <=("2022-08-31")) 
+group by trans_id,date(refund_date),client_id,client_wallet_id,date(trans_date),trans_ref_no , comments
+) as wallet_output
+LEFT OUTER JOIN
+(
+select AGG_TRANS_ID,AGG_TRANS_STATUS,AGG_AMOUNT
+from 
+ (select client_txn_id as AGG_TRANS_ID,txn_id as AGG_Trans_Ref_No, case 
+                when  substr(client_txn_id,0,2)='TW' then 'TW'
+                 end as AGG_NAME ,status as AGG_TRANS_STATUS,date(request_timestamp) as AGG_DATE,sum(amount) as AGG_AMOUNT from `sm_recon.ts_recharge_think_wallet_log`where 
+(date (request_timestamp) >= date_trunc(date_sub(("2022-08-31"), interval 1 day), month) and date(request_timestamp) <=("2022-08-31"))
+          and status in ('Failed','Pending','Rollback')
+          group by status,client_txn_id,date(request_timestamp),txn_id
+          UNION ALL
+          select system_ref_no,order_no,
+          case 
+                 when  substr(system_ref_no,0,4)='NJRI' then 'NJRI'
+                 end as AGG_NAME,
+                 recharge_status,order_date,sum(amount)
+                  from `sm_recon.ts_recharge_njri_transaction_log`
+          where 
+          (date (order_date) >= date_trunc(date_sub(("2022-08-31"), interval 1 day), month) and date(order_date) <=("2022-08-31"))
+          and recharge_status in (
+'Recharge Unsuccessful','Recharge Inprocess')
+          group by system_ref_no,order_date,recharge_status,order_no
+          UNION ALL
+          select refill_id,trans_id,
+          case 
+                 when  substr(refill_id,0,3)='JIO' then 'JIO'
+                 end as AGG_NAME ,result_description,date(real_time),sum(amount)
+           from `sm_recon.ts_recharge_jio_spice_money_log`
+          where  (date (real_time) >= date_trunc(date_sub(("2022-08-31"), interval 1 day), month) and date(real_time) <=("2022-08-31"))
+           and result_description in ('Transaction Limit Reached for Recharges')
+            group by refill_id,result_description,date(real_time),trans_id
+ )
+)as agg_txn_output
+ON wallet_output.Transaction_Id=agg_txn_output.AGG_TRANS_ID
+LEFT JOIN
+(
+     select client_txn_id as REF_AGG_TRANS_ID,txn_id as REF_AGG_Trans_Ref_No, 
+  case 
+                when  substr(client_txn_id,0,2)='TW' then 'TW'
+                 end as REF_AGG_NAME ,status as REF_AGG_TRANS_STATUS,date(response_timestamp) as REF_AGG_DATE,sum(amount) as REF_AGG_AMOUNT from `sm_recon.ts_recharge_think_wallet_refund_log`
+          where 
+          (date (response_timestamp) >= date_trunc(date_sub(("2022-08-31"), interval 1 day), month) and date(response_timestamp) <=("2022-08-31"))
+          group by status,client_txn_id,date(response_timestamp),txn_id
+          UNION ALL
+          select system_ref_no,order_no,
+          case 
+                 when  substr(system_ref_no,0,4)='NJRI' then 'NJRI'
+                 end as AGG_NAME,
+                 transaction_status,date(final_status_change_date) as final_status_change_date,sum(amount) as NJRI_refund_amount
+                  from `sm_recon.ts_recharge_njri_rev_transaction_log`
+          where 
+          (date (final_status_change_date) >= date_trunc(date_sub(("2022-08-31"), interval 1 day), month) and date(final_status_change_date) <=("2022-08-31"))
+          group by system_ref_no,final_status_change_date,transaction_status,order_no
+          
+ ) as agg_rev_output
+ON wallet_output.Transaction_Id=agg_rev_output.REF_AGG_TRANS_ID
+LEFT JOIN
+(
+  select transaction_id as CC_Tran_id,"Present in CC File" as CC_status from `sm_recon.ts_recharge_customer_care_file`  where date(load_date)= "2022-08-31"
+  
+) as cc_output
+ON cc_output.CC_Tran_id=Transaction_Id
+)
+UNION ALL
+select *,"2022-08-31"as recon_date from 
+(
+select Last_Month_Transaction_Id,Refund_Amount,Refund_Date,Client_Id,Client_Wallet_Id,Trans_Date,Trans_Ref_Num,Comments,Aggregator,
+case 
+when substr(Last_Month_Transaction_Id,0,4)='NJRI' and REF_AGG_AMOUNT is not null then "Refund received from NJRI aggregator"
+when substr(Last_Month_Transaction_Id,0,2)='TW' and REF_AGG_AMOUNT is not null then "Refund received from TW aggregator"
+--when  substr(trans_id,0,3)='JIO' and 
+else AGG_TRANS_STATUS  end as AGG_STATUS,CC_status
+from
+(
+select trans_id as Last_Month_Transaction_Id ,sum(refund_amt) as Refund_Amount,date(refund_date) as Refund_Date,a.client_id as Client_Id, c.client_wallet_id as Client_Wallet_Id,date(trans_date) as Trans_Date,trans_ref_no as Trans_Ref_Num , comments as Comments,
+case 
+                when  substr(trans_id,0,2)='TW' then 'THINKWALNUT'
+                 when  substr(trans_id,0,4)='NJRI' then 'NJRI'
+                 when  substr(trans_id,0,3)='JIO' then 'JIO'
+                 end as Aggregator  from prod_dwh.client_refund a, prod_dwh.distributor_retailer b , prod_dwh.client_wallet c where
+a.client_id= b.retailer_id and b.distributor_id= c.client_id and refund_type="Recharge" and 
+(date (refund_date) between  DATE_SUB(DATE_TRUNC("2022-08-31", MONTH), INTERVAL 11 DAY)  and DATE_SUB(DATE_TRUNC("2022-08-31", MONTH), INTERVAL 1 DAY))
+group by trans_id,date(refund_date),client_id,client_wallet_id,date(trans_date),trans_ref_no , comments
+) as last_mnth_refund_data
+LEFT OUTER JOIN
+(
+select AGG_TRANS_ID,AGG_TRANS_STATUS,AGG_AMOUNT
+from 
+ (select client_txn_id as AGG_TRANS_ID,txn_id as AGG_Trans_Ref_No, case 
+                when  substr(client_txn_id,0,2)='TW' then 'TW'
+                 end as AGG_NAME ,status as AGG_TRANS_STATUS,date(request_timestamp) as AGG_DATE,sum(amount) as AGG_AMOUNT from `sm_recon.ts_recharge_think_wallet_log`where 
+(date (request_timestamp) between  DATE_SUB(DATE_TRUNC("2022-08-31", MONTH), INTERVAL 11 DAY)          and DATE_SUB(DATE_TRUNC("2022-08-31", MONTH), INTERVAL 1 DAY))
+          and status in ('Failed','Pending','Rollback')
+          group by status,client_txn_id,date(request_timestamp),txn_id
+          UNION ALL
+          select system_ref_no,order_no,
+          case 
+                 when  substr(system_ref_no,0,4)='NJRI' then 'NJRI'
+                 end as AGG_NAME,
+                 recharge_status,order_date,sum(amount)
+                  from `sm_recon.ts_recharge_njri_transaction_log`
+          where 
+         (date (order_date) between  DATE_SUB(DATE_TRUNC("2022-08-31", MONTH), INTERVAL 11 DAY)          and DATE_SUB(DATE_TRUNC("2022-08-31", MONTH), INTERVAL 1 DAY))and recharge_status in (
+'Recharge Unsuccessful','Recharge Inprocess')
+          group by system_ref_no,order_date,recharge_status,order_no
+          UNION ALL
+          select refill_id,trans_id,
+          case 
+                 when  substr(refill_id,0,3)='JIO' then 'JIO'
+                 end as AGG_NAME ,result_description,date(real_time),sum(amount)
+           from `sm_recon.ts_recharge_jio_spice_money_log`
+          where  (date (real_time) between  DATE_SUB(DATE_TRUNC("2022-08-31", MONTH), INTERVAL 11 DAY)          and DATE_SUB(DATE_TRUNC("2022-08-31", MONTH), INTERVAL 1 DAY))
+           and result_description in ('Transaction Limit Reached for Recharges')
+            group by refill_id,result_description,date(real_time),trans_id
+ ))as last_month_agg_txn_output
+ ON last_mnth_refund_data.Last_Month_Transaction_Id=last_month_agg_txn_output.AGG_TRANS_ID
+LEFT OUTER JOIN
+(
+     select client_txn_id as REF_AGG_TRANS_ID,txn_id as REF_AGG_Trans_Ref_No, 
+  case 
+                when  substr(client_txn_id,0,2)='TW' then 'TW'
+                 end as REF_AGG_NAME ,status as REF_AGG_TRANS_STATUS,date(response_timestamp) as REF_AGG_DATE,sum(amount) as REF_AGG_AMOUNT from `sm_recon.ts_recharge_think_wallet_refund_log`
+          where 
+        (date (response_timestamp) between  DATE_SUB(DATE_TRUNC("2022-08-31", MONTH), INTERVAL 11 DAY)          and DATE_SUB(DATE_TRUNC("2022-08-31", MONTH), INTERVAL 1 DAY))
+          group by status,client_txn_id,date(response_timestamp),txn_id
+          UNION ALL
+          select system_ref_no,order_no,
+          case 
+                 when  substr(system_ref_no,0,4)='NJRI' then 'NJRI'
+                 end as AGG_NAME,
+                 transaction_status,date(final_status_change_date) as final_status_change_date,sum(amount)
+                  from `sm_recon.ts_recharge_njri_rev_transaction_log`
+          where 
+         (date (final_status_change_date) between  DATE_SUB(DATE_TRUNC("2022-08-31", MONTH), INTERVAL 11 DAY)          and DATE_SUB(DATE_TRUNC("2022-08-31", MONTH), INTERVAL 1 DAY)) group by system_ref_no,final_status_change_date,transaction_status,order_no
+          
+ ) as last_month_agg_rev_output
+ON last_mnth_refund_data.Last_Month_Transaction_Id=last_month_agg_rev_output.REF_AGG_TRANS_ID
+LEFT JOIN
+(
+  select transaction_id AS cc_tran_id,"Present in CC File" as CC_status from `sm_recon.ts_recharge_customer_care_file` 
+  where date(load_date)= "2022-08-31"
+  
+) as last_month_cc_output
+ON last_month_cc_output.cc_tran_id=Last_Month_Transaction_Id
+)

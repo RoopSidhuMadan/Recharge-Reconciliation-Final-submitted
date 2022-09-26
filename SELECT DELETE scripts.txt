@@ -1,0 +1,114 @@
+----log files select statements
+
+select * from sm_recon.ts_recharge_customer_care_file ;
+select * from sm_recon.ts_recharge_njri_recharge_sales_summary ;
+select * from sm_recon.ts_recharge_think_wallet_recharge_sales_summary ;
+select * from sm_recon.ts_recharge_think_wallet_log ;
+select * from sm_recon.ts_recharge_njri_transaction_log ;
+select * from sm_recon.ts_recharge_jio_spice_money_log ;
+select * from sm_recon.ts_recharge_njri_rev_transaction_log ;
+select * from sm_recon.ts_recharge_think_wallet_refund_log ;
+select * from sm_recon.ts_recharge_njri_reversed_commission_report ;
+select * from sm_recon.ts_recharge_njri_commission_calculate_report ;
+select * from sm_recon.ts_recharge_wallet_vs_tw_njri_jio_sdlwise_log ;
+select * from sm_recon.ts_recharge_wallet_vs_tw_njri_jio_agg_wise_log ;
+
+
+--delete queries for logs prod_sm_recon
+
+delete prod_sm_recon.prod_recharge_customer_care_file where true;
+delete prod_sm_recon.prod_recharge_njri_recharge_sales_summary where true;
+delete prod_sm_recon.prod_recharge_think_wallet_recharge_sales_summary where true;
+delete prod_sm_recon.prod_recharge_think_wallet_log where true;
+delete prod_sm_recon.prod_recharge_njri_transaction_log where true;
+delete prod_sm_recon.prod_recharge_jio_spice_money_log where true;
+delete prod_sm_recon.prod_recharge_njri_rev_transaction_log where true;
+delete prod_sm_recon.prod_recharge_think_wallet_refund_log where true;
+delete prod_sm_recon.prod_recharge_njri_reversed_commission_report where true;
+delete prod_sm_recon.prod_recharge_njri_commission_calculate_report where true;
+delete prod_sm_recon.prod_recharge_wallet_vs_tw_njri_jio_sdlwise_log where true;
+delete prod_sm_recon.prod_recharge_wallet_vs_tw_njri_jio_agg_wise_log where true;
+
+-----DELETE SCRIPTS for recons
+
+delete sm_recon.ts_recharge_wallet_vs_tw_njri_jio_sdl_wise where true;
+delete sm_recon.ts_recharge_wallet_vs_tw_njri_jio_agg_wise where true;
+delete sm_recon.ts_recharge_ftr_vs_njri_tw_commission_validation where true;
+delete sm_recon.ts_recharge_ftr_vs_njri_tw_revoke_commission_validation where true;
+delete sm_recon.ts_recharge_ftr_commission_summary where true;
+delete sm_recon.ts_recharge_wallet_trans_commission_summary where true;
+delete sm_recon.ts_recharge_limit_detail where true;
+delete sm_recon.ts_recharge_wallet_txns_report_summary where true;
+delete sm_recon.ts_recharge_refund_report_summary where true;
+delete sm_recon.ts_recharge_ftr_revoke_summary where true;
+delete sm_recon.ts_recharge_txns_info_report_summary where true;
+delete sm_recon.ts_recharge_njri_txn_report_summary where true;
+delete sm_recon.ts_recharge_njri_reversal_txn_report_summary where true;
+delete sm_recon.ts_recharge_tw_refund_report_summary where true;
+delete sm_recon.ts_recharge_njri_commission_report_summary where true;
+delete sm_recon.ts_recharge_njri_commission_reversal_report_summary where true;
+delete sm_recon.ts_recharge_jio_txn_report_summary where true;
+delete sm_recon.ts_recharge_spice_vs_tw_njri_cc_refund where true;
+delete sm_recon.ts_recharge_recon_tracker where true;
+delete sm_recon.ts_recharge_think_wallet_txn_report_summary where true;
+delete sm_recon.ts_recharge_wallet_vs_tw_njri_jio_agg_wise_log where true;
+delete sm_recon.ts_recharge_wallet_vs_tw_njri_jio_sdlwise_log where true;
+
+
+---DELETE script prod_sm_recon
+
+-----DELETE SCRIPTS
+
+delete prod_sm_recon.prod_recharge_wallet_vs_tw_njri_jio_sdl_wise where true;
+delete prod_sm_recon.prod_recharge_wallet_vs_tw_njri_jio_agg_wise where true;
+delete prod_sm_recon.prod_recharge_ftr_vs_njri_tw_commission_validation where true;
+delete prod_sm_recon.prod_recharge_ftr_vs_njri_tw_revoke_commission_validation where true;
+delete prod_sm_recon.prod_recharge_ftr_commission_summary where true;
+delete prod_sm_recon.prod_recharge_wallet_trans_commission_summary where true;
+delete prod_sm_recon.prod_recharge_limit_detail where true;
+delete prod_sm_recon.prod_recharge_wallet_txns_report_summary where true;
+delete prod_sm_recon.prod_recharge_refund_report_summary where true;
+delete prod_sm_recon.prod_recharge_ftr_revoke_summary where true;
+delete prod_sm_recon.prod_recharge_txns_info_report_summary where true;
+delete prod_sm_recon.prod_recharge_njri_txn_report_summary where true;
+delete prod_sm_recon.prod_recharge_njri_reversal_txn_report_summary where true;
+delete prod_sm_recon.prod_recharge_tw_refund_report_summary where true;
+delete prod_sm_recon.prod_recharge_njri_commission_report_summary where true;
+delete prod_sm_recon.prod_recharge_njri_commission_reversal_report_summary where true;
+delete prod_sm_recon.prod_recharge_jio_txn_report_summary where true;
+delete prod_sm_recon.prod_recharge_spice_vs_tw_njri_cc_refund where true;
+delete prod_sm_recon.prod_recharge_recon_tracker where true;
+delete prod_sm_recon.prod_recharge_think_wallet_txn_report_summary where true;
+delete prod_sm_recon.prod_recharge_wallet_vs_tw_njri_jio_agg_wise_log where true;
+delete prod_sm_recon.prod_recharge_wallet_vs_tw_njri_jio_sdlwise_log where true;
+
+
+
+
+
+select * from prod_sm_recon.prod_recharge_wallet_vs_tw_njri_jio_sdl_wise
+select * from prod_sm_recon.prod_recharge_wallet_vs_tw_njri_jio_agg_wise
+select * from prod_sm_recon.prod_recharge_ftr_vs_njri_tw_commission_validation
+select * from prod_sm_recon.prod_recharge_ftr_vs_njri_tw_revoke_commission_validation
+select * from prod_sm_recon.prod_recharge_ftr_commission_summary
+select * from prod_sm_recon.prod_recharge_wallet_trans_commission_summary
+select * from prod_sm_recon.prod_recharge_limit_detail
+select * from prod_sm_recon.prod_recharge_wallet_txns_report_summary
+select * from prod_sm_recon.prod_recharge_refund_report_summary
+select * from prod_sm_recon.prod_recharge_ftr_revoke_summary
+select * from prod_sm_recon.prod_recharge_txns_info_report_summary
+select * from prod_sm_recon.prod_recharge_njri_txn_report_summary
+select * from prod_sm_recon.prod_recharge_njri_reversal_txn_report_summary
+select * from prod_sm_recon.prod_recharge_think_wallet_refund_report_summary
+select * from prod_sm_recon.prod_recharge_njri_commission_report_summary
+select * from prod_sm_recon.prod_recharge_njri_commission_reversal_report_summary
+select * from prod_sm_recon.prod_recharge_jio_txn_report_summary
+select * from prod_sm_recon.prod_recharge_spice_vs_tw_njri_cc_refund
+select * from prod_sm_recon.prod_recharge_recon_tracker
+select * from `prod_sm_recon.prod_recharge_think_wallet_txn_report_summary`
+
+
+
+
+
+

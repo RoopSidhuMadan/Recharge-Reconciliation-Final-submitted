@@ -1,0 +1,290 @@
+select B.Transaction_Date as Tran_Date,Txn_Count_As_Per_Wallet_Logs,Txn_Amount_As_Per_Wallet_Logs_NJRI,Txn_Amount_As_Per_Wallet_Logs_TW,Txn_Amount_As_Per_Wallet_Logs_JIO,
+(Txn_Amount_As_Per_Wallet_Logs_NJRI+Txn_Amount_As_Per_Wallet_Logs_TW+Txn_Amount_As_Per_Wallet_Logs_JIO) as  Net_Txn_Amount_As_Per_Wallet_Logs, Sum_of_agent_refund_NJRI,Sum_of_agent_refund_TW,Sum_of_agent_refund_JIO, 
+(Sum_of_agent_refund_NJRI+Sum_of_agent_refund_TW+Sum_of_agent_refund_JIO) as  Net_Sum_of_agent_refund ,Agent_Commission_as_per_wallet_credit_NJRI,Agent_Commission_as_per_wallet_credit_TW,Agent_Commission_as_per_wallet_credit_JIO,
+Agent_Commission_Wallet_LessThan_200_MobileOPR,Agent_Commission_Wallet_AboveOrEqual_200_MobileOPR,Agent_Commission_Wallet_MobileDevice_Airtel_JIO, Agent_Commission_As_Per_Wallet_Credit_DTH_Operator,(Agent_Commission_Wallet_LessThan_200_MobileOPR+Agent_Commission_Wallet_AboveOrEqual_200_MobileOPR+Agent_Commission_Wallet_MobileDevice_Airtel_JIO+Agent_Commission_As_Per_Wallet_Credit_DTH_Operator)as 
+Net_Commission_Agent_Wallet_Credit_As_Per_System ,Net_Commission_Agent_Wallet_Reversal_as_per_System,
+NJRI_Recharge_Consumption,TW_Recharge_Consumption,JIO_Recharge_Consumption,(NJRI_Recharge_Consumption+TW_Recharge_Consumption+JIO_Recharge_Consumption)as  Net_Aggregator_Consumption ,NJRI_Refund_Amount,TW_Refund_Amount,JIO_Refund_Amount,(NJRI_Refund_Amount+TW_Refund_Amount+JIO_Refund_Amount) as  Net_Aggregator_Refund,
+ NJRI_Commission_Credit, NJRI_Commission_Reversal, TW_Commission_Credit, TW_Commission_Reversal,TW_Margin_to_Spice,NJRI_Margin_to_Spice,
+(NJRI_Commission_Credit-Agent_Commission_as_per_wallet_credit_NJRI) as Net_NJRI_Commission_Income,
+(TW_Commission_Credit-Agent_Commission_as_per_wallet_credit_TW) as  Net_TW_Commission_Income 
+from 
+(
+  select count(*) as  Txn_Count_As_Per_Wallet_Logs ,date(trans_date) as Transaction_Date from prod_dwh.wallet_trans  where (date (trans_date) ="2022-08-10") and comments in ('Recharge_Mobile')
+        group by Transaction_Date 
+)as B,
+(
+  select round(Txn_Amount_As_Per_Wallet_Logs_NJRI,3) as Txn_Amount_As_Per_Wallet_Logs_NJRI,Transaction_Date from   
+   ( 
+select date(trans_date) as Transaction_Date,sum(trans_amt) as  Txn_Amount_As_Per_Wallet_Logs_NJRI  from prod_dwh.wallet_trans where 
+date (trans_date)= "2022-08-10" and comments in ('Recharge_Mobile') and substr(trans_id,0,4)='NJRI'
+          group by Transaction_Date
+   )
+
+)as C,
+(
+
+select round(Txn_Amount_As_Per_Wallet_Logs_TW,3) as Txn_Amount_As_Per_Wallet_Logs_TW,Transaction_Date from   
+   ( 
+ select date(trans_date) as Transaction_Date,sum(trans_amt) as  Txn_Amount_As_Per_Wallet_Logs_TW  from prod_dwh.wallet_trans where 
+date (trans_date)= "2022-08-10"  and comments in ('Recharge_Mobile') and substr(trans_id,0,2)='TW'
+          group by Transaction_Date)
+)as D,
+(
+  select round(Txn_Amount_As_Per_Wallet_Logs_JIO,3) as Txn_Amount_As_Per_Wallet_Logs_JIO from   
+   ( 
+select date(trans_date) as Transaction_Date,sum(trans_amt) as  Txn_Amount_As_Per_Wallet_Logs_JIO  from prod_dwh.wallet_trans where 
+date (trans_date)="2022-08-10"  and comments in ('Recharge_Mobile') and substr(trans_id,0,3)='JIO'
+          group by Transaction_Date)
+)as E,
+(
+  select coalesce(
+(select round(Sum_of_agent_refund_NJRI,3) as Sum_of_agent_refund_NJRI from   
+   ( 
+  select sum(refund_amt) as Sum_of_agent_refund_NJRI
+                from prod_dwh.client_refund a, prod_dwh.distributor_retailer b , prod_dwh.client_wallet c where
+                a.client_id= b.retailer_id and b.distributor_id= c.client_id and refund_type="Recharge" and substr(trans_id,0,4)='NJRI' and date(refund_date)="2022-08-10"
+                group by date(refund_date))),0) as Sum_of_agent_refund_NJRI
+)as G,
+(
+  select coalesce(
+(select round(Sum_of_agent_refund_TW,3) as Sum_of_agent_refund_TW from   
+   ( 
+select sum(refund_amt) as Sum_of_agent_refund_TW
+                from prod_dwh.client_refund a, prod_dwh.distributor_retailer b , prod_dwh.client_wallet c where
+                a.client_id= b.retailer_id and b.distributor_id= c.client_id and refund_type="Recharge" and substr(trans_id,0,2)='TW' and date(refund_date)="2022-08-10"
+                group by date(refund_date))),0) as Sum_of_agent_refund_TW
+)as H,
+(
+select coalesce(
+(select round(Sum_of_agent_refund_JIO,3) as Sum_of_agent_refund_JIO from   
+   ( 
+select sum(refund_amt) as Sum_of_agent_refund_JIO
+                from prod_dwh.client_refund a, prod_dwh.distributor_retailer b , prod_dwh.client_wallet c where
+                a.client_id= b.retailer_id and b.distributor_id= c.client_id and refund_type="Recharge" and substr(trans_id,0,3)='JIO' and date(refund_date)="2022-08-10"
+                group by date(refund_date))),0) as Sum_of_agent_refund_JIO
+)as I,
+(
+  select coalesce((
+    select round(Agent_Commission_as_per_wallet_credit_NJRI,3) as Agent_Commission_as_per_wallet_credit_NJRI from   (select 
+sum(t1.amount_transferred) as Agent_Commission_as_per_wallet_credit_NJRI
+FROM spicemoney-dwh.prod_dwh.cme_wallet as t1
+        where t1.comments IN ('RECHARGE-Discount-Mobile') and 
+         date(transfer_date)="2022-08-10" and substr(trans_ref_no,0,4)='NJRI' group by date(transfer_date)
+         )),0) as Agent_Commission_as_per_wallet_credit_NJRI 
+) as K,
+(
+ select coalesce((
+   select round(Agent_Commission_as_per_wallet_credit_TW,3) as Agent_Commission_as_per_wallet_credit_TW from   
+   (select 
+sum(t1.amount_transferred) as Agent_Commission_as_per_wallet_credit_TW
+FROM spicemoney-dwh.prod_dwh.cme_wallet as t1
+        where t1.comments IN ('RECHARGE-Discount-Mobile') and 
+         date (transfer_date) ="2022-08-10" and substr(trans_ref_no,0,2)='TW' group by date(transfer_date))),0) as Agent_Commission_as_per_wallet_credit_TW
+) as L,
+(
+  select coalesce(( 
+   select round(Agent_Commission_as_per_wallet_credit_JIO,3) as Agent_Commission_as_per_wallet_credit_JIO from   
+   (  
+    select 
+sum(t1.amount_transferred) as Agent_Commission_as_per_wallet_credit_JIO 
+FROM spicemoney-dwh.prod_dwh.cme_wallet as t1
+        where t1.comments IN ('RECHARGE-Discount-Mobile') and 
+         date (transfer_date)="2022-08-10" and substr(trans_ref_no,0,3)='JIO' group by date(transfer_date))),0) as 
+         Agent_Commission_as_per_wallet_credit_JIO
+) as M,
+(
+
+select coalesce(( 
+select round(Agent_Commission_Wallet_LessThan_200_MobileOPR,3) as Agent_Commission_Wallet_LessThan_200_MobileOPR from   
+   (  
+select sum(ftr_commission) as Agent_Commission_Wallet_LessThan_200_MobileOPR from 
+(select FTR_UNIQUE_IDENTIFICATION_NO,ftr_commission,device_type,OPERATOR_TITLE,recharge_amt from 
+(select amount_transferred as ftr_commission,
+    unique_identification_no as FTR_UNIQUE_IDENTIFICATION_NO from 
+    spicemoney-dwh.prod_dwh.cme_wallet
+            where comments IN ('RECHARGE-Discount-Mobile') and 
+            DATE(transfer_date) = "2022-08-10"
+)as FTR_revoke_output
+LEFT OUTER JOIN
+    (
+    select t1.trans_id,t1.device_type,t1.operator_id,t1.recharge_amt,t2.name as OPERATOR_TITLE from prod_dwh.recharge t1, `prod_dwh.operator` t2
+    where t1.operator_id=t2.operator_id
+    ) as recharge_output
+    ON recharge_output.trans_id=FTR_UNIQUE_IDENTIFICATION_NO
+)
+where recharge_amt<200
+and OPERATOR_TITLE NOT IN ('AIRTEL','RELIANCE_JIO')
+
+
+)),0) as  Agent_Commission_Wallet_LessThan_200_MobileOPR
+) as N,
+(
+  
+select coalesce(( 
+  select round(Agent_Commission_Wallet_AboveOrEqual_200_MobileOPR,3) as Agent_Commission_Wallet_AboveOrEqual_200_MobileOPR from   
+   ( 
+select sum(ftr_commission) as Agent_Commission_Wallet_AboveOrEqual_200_MobileOPR from 
+(select FTR_UNIQUE_IDENTIFICATION_NO,ftr_commission,device_type,OPERATOR_TITLE,recharge_amt from 
+(select amount_transferred as ftr_commission,
+    unique_identification_no as FTR_UNIQUE_IDENTIFICATION_NO from 
+    spicemoney-dwh.prod_dwh.cme_wallet
+            where comments IN ('RECHARGE-Discount-Mobile') and 
+            DATE(transfer_date) = "2022-08-10"
+)as FTR_revoke_output
+LEFT OUTER JOIN
+    (
+    select t1.trans_id,t1.device_type,t1.operator_id,t1.recharge_amt,t2.name as OPERATOR_TITLE from prod_dwh.recharge t1, `prod_dwh.operator` t2
+    where t1.operator_id=t2.operator_id
+    ) as recharge_output
+    ON recharge_output.trans_id=FTR_UNIQUE_IDENTIFICATION_NO
+)
+where recharge_amt>199 and OPERATOR_TITLE NOT IN ('AIRTEL','RELIANCE_JIO')
+)),0) as  Agent_Commission_Wallet_AboveOrEqual_200_MobileOPR
+
+
+) as O,
+(
+select coalesce(( 
+  select round(Agent_Commission_Wallet_MobileDevice_Airtel_JIO,3) as Agent_Commission_Wallet_MobileDevice_Airtel_JIO from   
+   ( 
+select sum(ftr_commission) as Agent_Commission_Wallet_MobileDevice_Airtel_JIO from 
+(select FTR_UNIQUE_IDENTIFICATION_NO,ftr_commission,device_type,OPERATOR_TITLE,recharge_amt from 
+(select amount_transferred as ftr_commission,
+    unique_identification_no as FTR_UNIQUE_IDENTIFICATION_NO from 
+    spicemoney-dwh.prod_dwh.cme_wallet
+            where comments IN ('RECHARGE-Discount-Mobile') and 
+            DATE(transfer_date) = "2022-08-10"
+)as FTR_revoke_output
+LEFT OUTER JOIN
+    (
+    select t1.trans_id,t1.device_type,t1.operator_id,t1.recharge_amt,t2.name as OPERATOR_TITLE from prod_dwh.recharge t1, `prod_dwh.operator` t2
+    where t1.operator_id=t2.operator_id
+    ) as recharge_output
+    ON recharge_output.trans_id=FTR_UNIQUE_IDENTIFICATION_NO
+)
+where OPERATOR_TITLE IN ('AIRTEL','RELIANCE_JIO')
+
+)),0) as  Agent_Commission_Wallet_MobileDevice_Airtel_JIO
+
+)as Q,
+(
+
+ select coalesce(null,0) as Agent_Commission_As_Per_Wallet_Credit_DTH_Operator
+) as P,
+(
+select coalesce((
+  select round(Net_Commission_Agent_Wallet_Reversal_as_per_System,3) as Net_Commission_Agent_Wallet_Reversal_as_per_System from   
+   ( 
+  select 
+sum(t1.amount_transferred) as Net_Commission_Agent_Wallet_Reversal_as_per_System
+FROM spicemoney-dwh.prod_dwh.cme_wallet as t1
+        where t1.comments IN ('RECHARGE-Discount-Mobile-Reversal') and 
+         date(transfer_date)="2022-08-10" group by date(transfer_date))),0) as Net_Commission_Agent_Wallet_Reversal_as_per_System 
+
+)as S,
+(
+
+select coalesce((
+  select round(NJRI_Recharge_Consumption,3) as NJRI_Recharge_Consumption from   
+   ( 
+  select sum(amount) as NJRI_Recharge_Consumption from `sm_recon.ts_recharge_njri_transaction_log`
+          where date (order_date) ="2022-08-10"
+          and recharge_status in ('Recharge Successful'))),0) as  NJRI_Recharge_Consumption 
+)as T,
+(
+select coalesce((
+  select round(TW_Recharge_Consumption,3) as TW_Recharge_Consumption from   
+   ( 
+  select sum(amount) as TW_Recharge_Consumption from `sm_recon.ts_recharge_think_wallet_log`
+          where date (request_timestamp) ="2022-08-10"
+          and status in ('Success'))),0) as  TW_Recharge_Consumption 
+)as U,
+(
+select coalesce((
+  select round(JIO_Recharge_Consumption,3) as JIO_Recharge_Consumption from   
+   ( 
+  select sum(amount) as JIO_Recharge_Consumption from `sm_recon.ts_recharge_jio_spice_money_log`
+          where date (real_time) ="2022-08-10"
+          and result_description in ('Transaction Successful'))),0) as  JIO_Recharge_Consumption
+)as V,
+(
+  select coalesce((
+    select round(NJRI_Refund_Amount,3) as NJRI_Refund_Amount from   
+   ( select sum(amount) as  NJRI_Refund_Amount from `sm_recon.ts_recharge_njri_rev_transaction_log` where date (final_status_change_date) ="2022-08-10")),0) as NJRI_Refund_Amount
+
+)as X,
+(
+select coalesce((
+  select round(TW_Refund_Amount,3) as TW_Refund_Amount from   
+   ( select sum(amount) as  TW_Refund_Amount  from `sm_recon.ts_recharge_think_wallet_refund_log` where date (response_timestamp) ="2022-08-10")),0) as TW_Refund_Amount
+
+) as Y,
+(
+select coalesce((
+  select round(JIO_Refund_Amount,3) as JIO_Refund_Amount from   
+   ( 
+  select sum(amount) as JIO_Refund_Amount from `sm_recon.ts_recharge_jio_spice_money_log`
+where  date (real_time) ="2022-08-10" and result_description in ('Transaction Limit Reached for Recharges')) ),0) as JIO_Refund_Amount
+
+) as Z,
+(
+
+select coalesce((
+  select round(NJRI_Commission_Credit,3) as NJRI_Commission_Credit from   
+   ( select sum(commission_amount) as NJRI_Commission_Credit from `sm_recon.ts_recharge_njri_commission_calculate_report`
+where  date(order_date) ="2022-08-10")),0) as NJRI_Commission_Credit
+
+) as AB, 
+(
+  
+select coalesce((
+  select round(NJRI_Commission_Reversal,3) as NJRI_Commission_Reversal from   
+   ( select sum(commission_amount) as NJRI_Commission_Reversal from `sm_recon.ts_recharge_njri_reversed_commission_report`
+where  date(reversal_date) ="2022-08-10")),0) as NJRI_Commission_Reversal
+  
+) as AC, 
+(
+  
+  select coalesce((
+    select round(TW_Commission_Credit,3) as TW_Commission_Credit from   
+   ( 
+  select sum(TW_Commission_Amount) as  TW_Commission_Credit from
+  (
+ select amount,amount_deducted,amount-amount_deducted as TW_Commission_Amount from `sm_recon.ts_recharge_think_wallet_log` where status in ('Success','Rollback','Pending') and date(request_timestamp)="2022-08-10"
+  )
+
+
+  )),0) as TW_Commission_Credit
+  
+) as AD,
+(
+  
+  select coalesce((
+    select round(TW_Commission_Reversal_Amount,3) as TW_Commission_Reversal_Amount from   
+   ( 
+  select sum(TW_Commission_Reversal_Amount ) as  TW_Commission_Reversal_Amount  from
+  (
+ select amount-amount_deducted as TW_Commission_Reversal_Amount,client_txn_id
+  from `sm_recon.ts_recharge_think_wallet_log` where status in ('Pending','Rollback') and date(response_timestamp)="2022-08-10"
+  )
+  )),0) as TW_Commission_Reversal
+  
+) as AE,
+(
+  select coalesce((
+   select round(TW_Margin_to_Spice,3) as TW_Margin_to_Spice from   
+   ( 
+  select sum(margin_amt) as  TW_Margin_to_Spice
+ from `sm_recon.ts_recharge_think_wallet_recharge_sales_summary` where date(filedate)="2022-08-10")
+  ),0) as TW_Margin_to_Spice
+) as AF,
+(
+  select coalesce((
+   select round(NJRI_Margin_to_Spice,3) as NJRI_Margin_to_Spice from   
+   ( 
+  select margin as NJRI_Margin_to_Spice 
+ from `sm_recon.ts_recharge_njri_recharge_sales_summary` where date(load_date)="2022-08-10" and operator="Total"
+   )),0) as NJRI_Margin_to_Spice
+) as AG
+
+

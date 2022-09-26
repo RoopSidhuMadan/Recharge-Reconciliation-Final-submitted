@@ -1,0 +1,51 @@
+-----LOG TABLES
+select * from sm_recon.ts_recharge_customer_care_file
+
+select * from sm_recon.ts_recharge_njri_recharge_sales_summary
+
+select * from sm_recon.ts_recharge_think_wallet_recharge_sales_summary
+
+select * from sm_recon.ts_recharge_think_wallet_log
+
+select * from sm_recon.ts_recharge_njri_transaction_log
+
+select * from sm_recon.ts_recharge_jio_spice_money_log
+
+select * from sm_recon.ts_recharge_njri_rev_transaction_log
+
+select * from sm_recon.ts_recharge_think_wallet_refund_log
+
+select * from sm_recon.ts_recharge_njri_reversed_commission_report
+
+select * from sm_recon.ts_recharge_njri_commission_calculate_report
+
+select * from sm_recon.ts_recharge_wallet_vs_tw_njri_jio_sdlwise_log
+
+select * from sm_recon.ts_recharge_wallet_vs_tw_njri_jio_agg_wise_log
+
+
+
+
+
+-----------TABLES CRAETED FOR SMARTEN
+select * from sm_recon.ts_recharge_wallet_vs_tw_njri_jio_sdl_wise
+select * from sm_recon.ts_recharge_wallet_vs_tw_njri_jio_agg_wise
+select * from sm_recon.ts_recharge_ftr_vs_njri_tw_commission_validation
+select * from sm_recon.ts_recharge_ftr_vs_njri_tw_revoke_commission_validation
+select * from sm_recon.ts_recharge_ftr_commission_summary
+select * from sm_recon.ts_recharge_wallet_trans_commission_summary
+select * from sm_recon.ts_recharge_limit_detail
+select * from sm_recon.ts_recharge_wallet_txns_report_summary
+select * from sm_recon.ts_recharge_refund_report_summary
+select * from sm_recon.ts_recharge_ftr_revoke_summary
+select * from sm_recon.ts_recharge_txns_info_report_summary
+select * from sm_recon.ts_recharge_njri_txn_report_summary
+select * from sm_recon.ts_recharge_njri_reversal_txn_report_summary
+select * from sm_recon.ts_recharge_tw_refund_report_summary
+select * from sm_recon.ts_recharge_njri_commission_report_summary
+select * from sm_recon.ts_recharge_njri_commission_reversal_report_summary
+select * from sm_recon.ts_recharge_jio_txn_report_summary
+select * from sm_recon.ts_recharge_spice_vs_tw_njri_cc_refund
+select * from sm_recon.ts_recharge_recon_tracker
+select * from `sm_recon.ts_recharge_think_wallet_txn_report_summary`
+

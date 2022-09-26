@@ -1,0 +1,124 @@
+select Transaction_Id as SDL_TRANS_ID,trans_ref_no as SDL_Trans_Ref_No,SDL_COMMENTS,Trans_Status,SDL_STATUS, SDL_Refund_Amount,Transaction_Date,SDL_Trans_Amount from 
+        (select Transaction_Id,
+        case 
+                when SDL_Refund_Amount is null then 'SUCCESS' else 'REFUND' end as SDL_STATUS,
+                SDL_Refund_Amount,Transaction_Date,SDL_Trans_Amount,Trans_Status,trans_ref_no,
+        case 
+                when  substr(Transaction_Id,0,2)='TW' then 'THINKWALNUT'
+                 when  substr(Transaction_Id,0,4)='NJRI' then 'NJRI'
+                 when  substr(Transaction_Id,0,3)='JIO' then 'JIO'
+                 end as SDL_COMMENTS       
+        from
+          
+          (
+          select trans_id as Transaction_Id,sum(trans_amt) as SDL_Trans_Amount,trans_status as Trans_Status,trans_date as Transaction_Date from prod_dwh.wallet_trans  where date(trans_date)="2022-08-10" and comments in ('Recharge_Mobile')
+        group by Transaction_Id,trans_status,trans_date 
+        ) as spice_wallet_output
+        LEFT OUTER JOIN
+        (  select refund_type,trans_id,refund_amt as SDL_Refund_Amount,refund_date,a.client_id,wallet_id,opening_bal,closing_bal,device_no,trans_date,trans_ref_no , comments, c.client_wallet_id as DistributorWalletId,
+                from prod_dwh.client_refund a, prod_dwh.distributor_retailer b , prod_dwh.client_wallet c where
+                a.client_id= b.retailer_id and b.distributor_id= c.client_id and refund_type="Recharge" and date(trans_date)="2022-08-10"
+        ) as refund_report_output
+        ON spice_wallet_output.Transaction_Id=refund_report_output.trans_id
+        )
+
+
+
+
+
+
+
+
+
+select AGG_TRANS_ID, AGG_Trans_Ref_No,  AGG_NAME , 
+   case when REF_AGG_AMOUNT is not null then 'REFUND' else AGG_TRANS_STATUS end as AGG_STATUS,AGG_DATE,
+ AGG_AMOUNT,REF_AGG_AMOUNT
+from 
+ (select client_txn_id as AGG_TRANS_ID,txn_id as AGG_Trans_Ref_No, case 
+                when  substr(client_txn_id,0,2)='TW' then 'TW'
+                 end as AGG_NAME ,status as AGG_TRANS_STATUS,date(request_timestamp) as AGG_DATE,sum(amount) as AGG_AMOUNT from `sm_recon.ts_recharge_think_wallet_log`
+          where date(request_timestamp)="2022-08-10"
+          group by status,client_txn_id,date(request_timestamp),txn_id
+          UNION ALL
+          select system_ref_no,order_no,
+          case 
+                 when  substr(system_ref_no,0,4)='NJRI' then 'NJRI'
+                 end as AGG_NAME,
+                 recharge_status,order_date,sum(amount)
+                  from `sm_recon.ts_recharge_njri_transaction_log`
+          where date(order_date)="2022-08-10" 
+          group by system_ref_no,order_date,recharge_status,order_no
+          UNION ALL
+          select refill_id,trans_id,
+          case 
+                 when  substr(refill_id,0,3)='JIO' then 'JIO'
+                 end as AGG_NAME ,result_description,date(real_time),sum(amount)
+           from `sm_recon.ts_recharge_jio_spice_money_log`
+          where date(real_time)="2022-08-10"
+            group by refill_id,result_description,date(real_time),trans_id
+ )as agg_txn_output
+ LEFT OUTER JOIN
+ (
+     select client_txn_id as REF_AGG_TRANS_ID,txn_id as REF_AGG_Trans_Ref_No, 
+  case 
+                when  substr(client_txn_id,0,2)='TW' then 'TW'
+                 end as REF_AGG_NAME ,status as REF_AGG_TRANS_STATUS,date(response_timestamp) as REF_AGG_DATE,sum(amount) as REF_AGG_AMOUNT from `sm_recon.ts_recharge_think_wallet_refund_log`
+          where date(response_timestamp)="2022-08-10"
+          group by status,client_txn_id,date(response_timestamp),txn_id
+          UNION ALL
+          select system_ref_no,order_no,
+          case 
+                 when  substr(system_ref_no,0,4)='NJRI' then 'NJRI'
+                 end as AGG_NAME,
+                 transaction_status,date(final_status_change_date),sum(amount)
+                  from `sm_recon.ts_recharge_njri_rev_transaction_log`
+          where date(final_status_change_date)="2022-08-10" 
+          group by system_ref_no,date(final_status_change_date),transaction_status,order_no
+          
+ ) as agg_rev_output
+ON agg_txn_output.AGG_TRANS_ID=agg_rev_output.REF_AGG_TRANS_ID
+
+
+
+
+
+
+
+
+
+
+select  SDL_TRANS_ID,SDL_Trans_Ref_No,SDL_COMMENTS,Trans_Status,SDL_STATUS, SDL_Refund_Amount,Transaction_Date,SDL_Trans_Amount,AGG_NAME,AGG_AMOUNT,AGG_STATUS ,(SDL_Trans_Amount-AGG_AMOUNT) as Diff from
+(
+select SDL_TRANS_ID,SDL_Trans_Ref_No,SDL_COMMENTS,Trans_Status,SDL_STATUS, SDL_Refund_Amount,Transaction_Date,coalesce(SDL_Trans_Amount,0) as SDL_Trans_Amount,AGG_NAME,coalesce(AGG_AMOUNT,0) as AGG_AMOUNT,AGG_STATUS from
+(select SDL_TRANS_ID,SDL_Trans_Ref_No,SDL_COMMENTS,Trans_Status,SDL_STATUS, SDL_Refund_Amount,Transaction_Date,SDL_Trans_Amount from 
+        sm_recon.ts_recharge_wallet_vs_tw_njri_jio_sdlwise_log where date(Transaction_Date)="2022-08-10"
+) as sdl_wise_output
+LEFT OUTER JOIN
+(
+  select AGG_TRANS_ID, AGG_Trans_Ref_No,  AGG_NAME , AGG_STATUS,AGG_DATE,
+ AGG_AMOUNT,REF_AGG_AMOUNT from sm_recon.ts_recharge_wallet_vs_tw_njri_jio_agg_wise_log where date(AGG_DATE)="2022-08-10"
+) as agg_wise_output
+ON SDL_TRANS_ID=AGG_TRANS_ID
+)
+
+
+
+
+
+
+
+
+select TRANS_ID, TRANS_REF_NO,  AGGREGATOR , AGG_STATUS,AGG_DATE, AGG_AMOUNT ,SDL_COMMENTS,SDL_STATUS,SDL_Trans_Amount,(AGG_AMOUNT-SDL_Trans_Amount) as Diff from
+(select AGG_TRANS_ID as TRANS_ID, AGG_Trans_Ref_No as TRANS_REF_NO,  AGG_NAME as AGGREGATOR , AGG_STATUS,AGG_DATE,coalesce(AGG_AMOUNT,0) as AGG_AMOUNT ,SDL_COMMENTS,SDL_STATUS,coalesce(SDL_Trans_Amount,0) as SDL_Trans_Amount from
+(
+  select AGG_TRANS_ID, AGG_Trans_Ref_No,  AGG_NAME , AGG_STATUS,AGG_DATE,
+ AGG_AMOUNT,REF_AGG_AMOUNT from sm_recon.ts_recharge_wallet_vs_tw_njri_jio_agg_wise_log where date(AGG_DATE)="2022-08-10"
+) as agg_wise_output
+LEFT OUTER JOIN
+(
+select SDL_TRANS_ID,SDL_Trans_Ref_No,SDL_COMMENTS,Trans_Status,SDL_STATUS, SDL_Refund_Amount,Transaction_Date,SDL_Trans_Amount from 
+        sm_recon.ts_recharge_wallet_vs_tw_njri_jio_sdlwise_log where date(Transaction_Date)="2022-08-10"
+) as sdl_wise_output
+
+ON SDL_TRANS_ID=AGG_TRANS_ID
+)

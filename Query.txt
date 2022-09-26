@@ -1,0 +1,31 @@
+#df_jio['transaction_time']=(df_jio['transaction_time']- 25569) * 86400
+    #df_jio['transaction_time'] =datetime.datetime.fromtimestamp(df_jio['transaction_time']).strftime('%Y-%m-%d %H:%M:%S')
+    
+    #df_jio['transaction_time'] = pd.to_datetime(df_jio['transaction_time'],unit='ms')
+    df_jio['transaction_time']=pd.to_datetime(df_jio['transaction_time'],format='%Y-%m-%d')
+    
+   
+    df_jio[list1_jio]=df_jio[list1_jio].astype(str)
+    df_jio[list2_jio]=df_jio[list2_jio].astype(float)
+    #df_jio['transaction_time'] = pd.to_datetime(df_jio['transaction_time'])
+   # payment_df['transaction_time']=datetime.strptime(payment_df['transaction_time'], "%d/%m/%Y %H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
+   
+   # df_jio['transaction_time']=pd.to_datetime(df_jio['transaction_time'].dt.strftime('%Y-%d-%m %H:%M:%S'))
+  
+    
+
+    #df_jio.to_gbq(destination_table='sm_recon.ts_recharge_jio_spice_money_log', project_id='spicemoney-dwh', if_exists='replace' , table_schema = schema_jio,credentials=credentials)
+    print("Data moved to ts_recharge_jio_spice_money_log table")
+    #df.to_gbq(destination_table='prod_sm_recon.prod_wallet_axis_recharge_log', project_id='spicemoney-dwh', if_exists='append' , table_schema = schema,credentials=credentials)
+    #print("Data moved to prod_wallet_ybl_bank_statement_log table")
+
+
+#epochtime = 44802.277477    
+    #date_time = datetime.fromtimestamp(epochtime)
+    #print(datetime.fromtimestamp(44802.277477).strftime('%Y-%m-%d %H:%M:%S'))
+
+ #44802.277477                                  
+    #df_jio['transaction_time']=datetime.fromtimestamp(df_jio['transaction_time']).dt.strftime('%Y-%m-%d %H:%M:%S')
+   
+
+

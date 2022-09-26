@@ -1,0 +1,41 @@
+--EXTERNAL FILE SUMMARY
+
+--NJRI Txn Report From Portal summary
+
+select date(order_date) as order_date,sum(amount) as sum_amount,recharge_status from `sm_recon.ts_recharge_njri_transaction_log` where date(order_date)="2022-08-10" group by order_date,recharge_status
+
+--NJRI reversal txns report from Mail
+select  date(final_status_change_date) as final_status_change_date,sum(amount) as amount,transaction_status
+                  from `sm_recon.ts_recharge_njri_rev_transaction_log`
+          where date(final_status_change_date)="2022-08-10" 
+          group by date(final_status_change_date),transaction_status
+
+--TW Txns report from portal
+
+select status as status,sum(amount) as amount,sum(amount_deducted) as amount_deducted,sum(rollback_amount) as rollback_amount,date(request_timestamp) as request_timestamp, from `sm_recon.ts_recharge_think_wallet_log`
+          where date(request_timestamp)="2022-08-10"
+          group by status,date(request_timestamp)
+
+--TW refund report from portal
+select status as status,sum(amount) as amount,sum(amount_deducted) as amount_deducted,sum(rollback_amount) as rollback_amount,date(response_timestamp) as response_timestamp from `sm_recon.ts_recharge_think_wallet_refund_log`
+          where date(response_timestamp)="2022-08-10"
+          group by status,date(response_timestamp)
+
+--NJRI Commission report on mail
+select date(order_date) as order_date,service_name,service_provider,gst_type,recharge_type,sum(commission_amount) as commission_amount
+                  from `sm_recon.ts_recharge_njri_commission_calculate_report`
+          where date(order_date)="2022-08-10" 
+          group by date(order_date),service_name,service_provider,gst_type,recharge_type
+         
+
+---NJRI Commission Reversal report on mail
+select service_name,service_provider,gst_type,recharge_type,sum(commission_amount) as commission_amount,date(reversal_date) as reversal_date
+                  from `sm_recon.ts_recharge_njri_reversed_commission_report`
+          where date(reversal_date)="2022-08-10" 
+          group by date(reversal_date),service_name,service_provider,gst_type,recharge_type
+
+--JIO Txns logs on mail(time to be shown or not????????)
+ select date(real_time) as RealTime,sum(amount) as Amount,result_description
+           from `sm_recon.ts_recharge_jio_spice_money_log`
+          where date(real_time)="2022-08-10"
+            group by date(real_time),result_description

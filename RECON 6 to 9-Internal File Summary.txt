@@ -1,0 +1,46 @@
+---INTERNAL FILE SUMMARY
+
+--wallet txns report summary
+
+select sum(trans_amt) as SumOf_Trans_Amount,trans_type, DATE(trans_date) as Trans_Date,comments as Comments,
+case 
+                when  substr(trans_id,0,2)='TW' then 'THINKWALNUT'
+                 when  substr(trans_id,0,4)='NJRI' then 'NJRI'
+                 when  substr(trans_id,0,3)='JIO' then 'JIO'
+                 end as Rch_Aggregator from prod_dwh.wallet_trans  where  DATE(trans_date)= "2022-08-10"  and comments in ('Recharge_Mobile')
+        group by DATE(trans_date) ,comments,trans_type,Rch_Aggregator
+
+
+--Refund report	summary
+select refund_type,sum(refund_amt) as Refund_Amount,date(refund_date) as refund_date, comments,
+case 
+                when  substr(trans_id,0,2)='TW' then 'THINKWALNUT'
+                 when  substr(trans_id,0,4)='NJRI' then 'NJRI'
+                 when  substr(trans_id,0,3)='JIO' then 'JIO'
+                 end as Aggregator
+                from prod_dwh.client_refund a, prod_dwh.distributor_retailer b , prod_dwh.client_wallet c where
+                a.client_id= b.retailer_id and b.distributor_id= c.client_id and refund_type="Recharge" and date(refund_date)="2022-08-10" group by refund_type,refund_date,comments,Aggregator
+     
+
+--FTR Revoke
+select DATE(transfer_date) as Transfer_Date,
+        comments as Comments,
+        trans_type as Trans_Type,
+        sum(amount_transferred) as Amount_Transferred,
+        FROM spicemoney-dwh.prod_dwh.cme_wallet
+        where comments IN ('IRCTC Recharge Discount','RECHARGE-Discount-Mobile','RECHARGE-Discount-Mobile-Reversal') and 
+        DATE(transfer_date) = "2022-08-10"
+        GROUP BY comments, transfer_date,trans_type
+
+
+
+--Txns info report
+select t1.device_type as Device_Type,date(recharge_date) as recharge_date,sum(recharge_amt) as recharge_amt,t2.name as TITLE,
+case 
+                when  substr(trans_id,0,2)='TW' then 'THINKWALNUT'
+                 when  substr(trans_id,0,4)='NJRI' then 'NJRI'
+                 when  substr(trans_id,0,3)='JIO' then 'JIO'
+                 end as Aggregator from prod_dwh.recharge t1, `prod_dwh.operator` t2
+ where t1.operator_id=t2.operator_id and date(recharge_date)="2022-08-10" group by t1.device_type,date(recharge_date),t2.name,Aggregator
+
+
